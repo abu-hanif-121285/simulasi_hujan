@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulasi Proses Terjadinya Hujan</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(to bottom, #87CEEB 0%, #E0F7FA 60%, #E0F7FA 100%);
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
+            transition: background 2s ease;
+        }
+        
+        body.raining {
+            background: linear-gradient(to bottom, #4A6572 0%, #344955 60%, #232F34 100%);
+        }
+        
+        .container {
+            width: 100%;
+            height: 100vh;
+            position: relative;
+        }
+        
+        .title {
+            text-align: center;
+            padding: 15px;
+            color: #333;
+            font-size: 24px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(255, 255, 255, 0.7);
+            z-index: 100;
+            position: relative;
+        }
+        
+        .controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 15px;
+            z-index: 100;
+        }
+        
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background-color: #45a049;
+        }
+        
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        
+        .info-panel {
+            position: absolute;
+            top: 80px;
+            right: 20px;
+            width: 250px;
+            background-color: rgba(255, 255, 255, 0.8);
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            z-index: 100;
+        }
+        
+        .info-panel h3 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+        
+        .info-panel p {
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: #555;
+        }
+        
+        .legend {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+        
+        .legend-color {
+            width: 15px;
+            height: 15px;
+            margin-right: 10px;
+            border-radius: 50%;
+        }
+        
+        /* Matahari */
+        .sun {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            background: radial-gradient(circle, #FFEB3B 0%, #FFC107 70%);
+            border-radius: 50%;
+            box-shadow: 0 0 40px #FFEB3B;
+            z-index: 10;
+            transition: opacity 2s ease;
+        }
+        
+        .sun.hidden {
+            opacity: 0;
+        }
+        
+        .sun-rays {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            animation: rotate 20s linear infinite;
+        }
+        
+        .sun-ray {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 4px;
+            height: 150px;
+            background: linear-gradient(to bottom, rgba(255, 235, 59, 0.8) 0%, rgba(255, 235, 59, 0) 100%);
+            transform-origin: bottom center;
+        }
+        
+        @keyframes rotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Sinar matahari ke air */
+        .sun-beams {
+            position: absolute;
+            bottom: 150px;
+            left: 0;
+            width: 100%;
+            height: 200px;
+            z-index: 7;
+            opacity: 0;
+            transition: opacity 1s ease;
+            pointer-events: none;
+        }
+        
+        .sun-beams.active {
+            opacity: 0.6;
+        }
+        
+        .beam {
+            position: absolute;
+            bottom: 0;
+            width: 3px;
+            height: 200px;
+            background: linear-gradient(to top, rgba(255, 235, 59, 0.7) 0%, rgba(255, 235, 59, 0) 100%);
+            transform-origin: bottom center;
+        }
+        
+        /* Sungai */
+        .river {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 150px;
+            background: linear-gradient(to bottom, rgba(33, 150, 243, 0.7) 0%, rgba(21, 101, 192, 0.9) 100%);
+            z-index: 5;
+        }
+        
+        .wave {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 200%;
+            height: 20px;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none"><path d="M0,0 C200,90 400,0 600,50 C800,100 1000,20 1200,60 L1200,120 L0,120 Z" fill="rgba(33, 150, 243, 0.8)"/></svg>');
+            background-size: 50% 100%;
+            animation: wave 8s linear infinite;
+        }
+        
+        @keyframes wave {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+        }
+        
+        /* Awan */
+        .cloud {
+            position: absolute;
+            width: 250px;
+            height: 80px;
+            background: white;
+            border-radius: 100px;
+            opacity: 0.8;
+            z-index: 20;
+            transition: all 2s ease;
+        }
+        
+        .cloud::before {
+            content: '';
+            position: absolute;
+            top: -30px;
+            left: 50px;
+            width: 100px;
+            height: 80px;
+            background: white;
+            border-radius: 50%;
+        }
+        
+        .cloud::after {
+            content: '';
+            position: absolute;
+            top: -20px;
+            right: 50px;
+            width: 120px;
+            height: 70px;
+            background: white;
+            border-radius: 50%;
+        }
+        
+        .cloud.heavy {
+            background: #5D6D7E;
+            transform: scale(1.2);
+        }
+        
+        .cloud.heavy::before {
+            background: #5D6D7E;
+        }
+        
+        .cloud.heavy::after {
+            background: #5D6D7E;
+        }
+        
+        /* Uap air - Perbaikan signifikan */
+        .vapor-container {
+            position: absolute;
+            bottom: 150px;
+            left: 0;
+            width: 100%;
+            height: 300px;
+            z-index: 8;
+            pointer-events: none;
+        }
+        
+        .vapor {
+            position: absolute;
+            bottom: 0;
+            width: 40px;
+            height: 40px;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.9) 0%, rgba(200, 230, 255, 0.7) 50%, rgba(150, 200, 255, 0.2) 100%);
+            border-radius: 50%;
+            filter: blur(3px);
+            opacity: 0;
+        }
+        
+        @keyframes evaporate {
+            0% {
+                bottom: 0;
+                opacity: 0;
+                transform: scale(0.3) translateX(0);
+            }
+            10% {
+                opacity: 0.9;
+            }
+            50% {
+                opacity: 0.7;
+                transform: scale(1.5) translateX(-15px);
+            }
+            100% {
+                bottom: 250px;
+                opacity: 0;
+                transform: scale(2.5) translateX(-30px);
+            }
+        }
+        
+        /* Efek panas matahari di permukaan air */
+        .heat-effect {
+            position: absolute;
+            bottom: 140px;
+            left: 0;
+            width: 100%;
+            height: 30px;
+            background: linear-gradient(to top, rgba(255, 255, 255, 0.4) 0%, transparent 100%);
+            opacity: 0;
+            z-index: 6;
+            animation: heat-shimmer 2s infinite;
+        }
+        
+        @keyframes heat-shimmer {
+            0% { opacity: 0.3; transform: scaleY(1); }
+            50% { opacity: 0.7; transform: scaleY(1.3); }
+            100% { opacity: 0.3; transform: scaleY(1); }
+        }
+        
+        /* Hujan - Perbaikan */
+        .rain {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            z-index: 25;
+            opacity: 0;
+            transition: opacity 1s;
+            pointer-events: none;
+        }
+        
+        .rain.active {
+            opacity: 1;
+        }
+        
+        .raindrop {
+            position: absolute;
+            width: 2px;
+            height: 15px;
+            background: linear-gradient(to bottom, rgba(33, 150, 243, 0), rgba(33, 150, 243, 0.8));
+            border-radius: 0 0 5px 5px;
+            animation: fall linear infinite;
+        }
+        
+        @keyframes fall {
+            0% {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+            }
+            90% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(100vh);
+                opacity: 0;
+            }
+        }
+        
+        /* Petir */
+        .lightning {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 30;
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .lightning.flash {
+            animation: lightning-flash 0.2s;
+        }
+        
+        @keyframes lightning-flash {
+            0% { opacity: 0; }
+            50% { opacity: 1; background-color: rgba(255, 255, 255, 0.8); }
+            100% { opacity: 0; }
+        }
+        
+        /* Tanah */
+        .ground {
+            position: absolute;
+            bottom: 150px;
+            left: 0;
+            width: 100%;
+            height: 50px;
+            background: linear-gradient(to bottom, #8D6E63 0%, #5D4037 100%);
+            z-index: 4;
+        }
+        
+        /* Pohon */
+        .tree {
+            position: absolute;
+            bottom: 150px;
+            width: 30px;
+            height: 100px;
+            z-index: 6;
+        }
+        
+        .trunk {
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 20px;
+            height: 60px;
+            background: linear-gradient(to right, #5D4037 0%, #8D6E63 50%, #5D4037 100%);
+        }
+        
+        .leaves {
+            position: absolute;
+            bottom: 50px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 80px;
+            background: radial-gradient(circle, #4CAF50 0%, #2E7D32 100%);
+            border-radius: 50%;
+        }
+        
+        /* Status */
+        .status {
+            position: absolute;
+            padding: 10px 20px;
+            background-color: rgba(255, 255, 255, 0.8);
+            border-radius: 5px;
+            font-weight: bold;
+            z-index: 100;
+        }
+        
+        /* Animasi siklus */
+        .evaporating .vapor {
+            animation: evaporate 5s ease-out;
+        }
+        
+        /* Media Queries untuk orientasi Landscape */
+        @media (orientation: landscape) {
+            .sun {
+                top: 15%;
+                left: 10%;
+            }
+            
+            .cloud {
+                top: 20%;
+                left: 30%;
+            }
+            
+            .tree {
+                left: 50%;
+            }
+            
+            .status {
+                top: 15%;
+                left: 2%;
+            }
+            
+            .info-panel {
+                top: 15%;
+                right: 2%;
+                width: 220px;
+                padding: 12px;
+            }
+            
+            .info-panel h3 {
+                font-size: 16px;
+                margin-bottom: 8px;
+            }
+            
+            .info-panel p {
+                font-size: 12px;
+                margin-bottom: 6px;
+            }
+        }
+        
+        /* Media Queries untuk orientasi Portrait */
+        @media (orientation: portrait) {
+            .title {
+                font-size: 20px;
+                padding: 10px;
+            }
+            
+            .sun {
+                top: 10%;
+                left: 15%;
+                width: 80px;
+                height: 80px;
+            }
+            
+            .sun-ray {
+                height: 120px;
+            }
+            
+            .cloud {
+                top: 25%;
+                left: 20%;
+                width: 200px;
+                height: 70px;
+            }
+            
+            .cloud::before {
+                top: -25px;
+                left: 40px;
+                width: 80px;
+                height: 70px;
+            }
+            
+            .cloud::after {
+                top: -15px;
+                right: 40px;
+                width: 100px;
+                height: 60px;
+            }
+            
+            .tree {
+                left: 60%;
+                height: 80px;
+            }
+            
+            .trunk {
+                height: 50px;
+            }
+            
+            .leaves {
+                bottom: 40px;
+                width: 70px;
+                height: 70px;
+            }
+            
+            .status {
+                top: 20%;
+                left: 5%;
+            }
+            
+            .info-panel {
+                top: 30%;
+                right: 5%;
+                width: 180px;
+                padding: 10px;
+            }
+            
+            .info-panel h3 {
+                font-size: 14px;
+                margin-bottom: 6px;
+            }
+            
+            .info-panel p {
+                font-size: 11px;
+                margin-bottom: 4px;
+            }
+            
+            .legend-color {
+                width: 12px;
+                height: 12px;
+            }
+            
+            .controls {
+                bottom: 10px;
+                gap: 10px;
+            }
+            
+            button {
+                padding: 8px 16px;
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="title">Simulasi Proses Terjadinya Hujan</h1>
+        
+        <div class="status" id="status">Status: Siap</div>
+        
+        <div class="info-panel">
+            <h3>Proses Siklus Air</h3>
+            <div class="legend">
+                <div class="legend-color" style="background-color: #FFEB3B;"></div>
+                <p>Matahari: Penguapan</p>
+            </div>
+            <div class="legend">
+                <div class="legend-color" style="background-color: white; border: 1px solid #ccc;"></div>
+                <p>Awan: Kondensasi</p>
+            </div>
+            <div class="legend">
+                <div class="legend-color" style="background-color: #2196F3;"></div>
+                <p>Hujan: Presipitasi</p>
+            </div>
+            <div class="legend">
+                <div class="legend-color" style="background-color: #2196F3;"></div>
+                <p>Sungai: Aliran Air</p>
+            </div>
+        </div>
+        
+        <div class="sun" id="sun">
+            <div class="sun-rays">
+                <div class="sun-ray" style="transform: rotate(0deg) translateY(-75px);"></div>
+                <div class="sun-ray" style="transform: rotate(45deg) translateY(-75px);"></div>
+                <div class="sun-ray" style="transform: rotate(90deg) translateY(-75px);"></div>
+                <div class="sun-ray" style="transform: rotate(135deg) translateY(-75px);"></div>
+                <div class="sun-ray" style="transform: rotate(180deg) translateY(-75px);"></div>
+                <div class="sun-ray" style="transform: rotate(225deg) translateY(-75px);"></div>
+                <div class="sun-ray" style="transform: rotate(270deg) translateY(-75px);"></div>
+                <div class="sun-ray" style="transform: rotate(315deg) translateY(-75px);"></div>
+            </div>
+        </div>
+        
+        <div class="sun-beams" id="sunBeams"></div>
+        
+        <div class="cloud" id="cloud"></div>
+        
+        <div class="rain" id="rain"></div>
+        
+        <div class="lightning" id="lightning"></div>
+        
+        <div class="vapor-container" id="vaporContainer"></div>
+        
+        <div class="ground"></div>
+        
+        <div class="river">
+            <div class="wave"></div>
+        </div>
+        
+        <div class="heat-effect" id="heatEffect"></div>
+        
+        <div class="tree">
+            <div class="trunk"></div>
+            <div class="leaves"></div>
+        </div>
+        
+        <div class="controls">
+            <button id="startBtn">Mulai Simulasi</button>
+            <button id="resetBtn">Reset</button>
+        </div>
+        
+        <!-- Audio elements -->
+        <audio id="evaporationSound" preload="auto">
+            <source src="https://assets.mixkit.co/sfx/preview/mixkit-wind-blowing-1213.mp3" type="audio/mpeg">
+        </audio>
+        
+        <audio id="rainSound" preload="auto">
+            <source src="https://assets.mixkit.co/sfx/preview/mixkit-heavy-rain-loop-1200.mp3" type="audio/mpeg">
+        </audio>
+        
+        <audio id="thunderSound" preload="auto">
+            <source src="https://assets.mixkit.co/sfx/preview/mixkit-thunder-explosion-1279.mp3" type="audio/mpeg">
+        </audio>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const startBtn = document.getElementById('startBtn');
+            const resetBtn = document.getElementById('resetBtn');
+            const cloud = document.getElementById('cloud');
+            const rain = document.getElementById('rain');
+            const status = document.getElementById('status');
+            const container = document.querySelector('.container');
+            const heatEffect = document.getElementById('heatEffect');
+            const sunBeams = document.getElementById('sunBeams');
+            const sun = document.getElementById('sun');
+            const lightning = document.getElementById('lightning');
+            const vaporContainer = document.getElementById('vaporContainer');
+            const body = document.body;
+            
+            // Audio elements
+            const evaporationSound = document.getElementById('evaporationSound');
+            const rainSound = document.getElementById('rainSound');
+            const thunderSound = document.getElementById('thunderSound');
+            
+            let isSimulating = false;
+            let vaporInterval;
+            let rainInterval;
+            let lightningInterval;
+            
+            // Buat sinar matahari
+            function createSunBeams() {
+                sunBeams.innerHTML = '';
+                for (let i = 0; i < 15; i++) {
+                    const beam = document.createElement('div');
+                    beam.className = 'beam';
+                    beam.style.left = `${10 + i * 6}%`;
+                    beam.style.transform = `rotate(${Math.random() * 10 - 5}deg)`;
+                    beam.style.opacity = `${0.3 + Math.random() * 0.4}`;
+                    sunBeams.appendChild(beam);
+                }
+            }
+            
+            // Buat tetesan hujan
+            function createRaindrops() {
+                rain.innerHTML = '';
+                for (let i = 0; i < 150; i++) {
+                    const raindrop = document.createElement('div');
+                    raindrop.className = 'raindrop';
+                    raindrop.style.left = `${Math.random() * 100}%`;
+                    raindrop.style.animationDuration = `${0.5 + Math.random() * 1}s`;
+                    raindrop.style.animationDelay = `${Math.random() * 2}s`;
+                    rain.appendChild(raindrop);
+                }
+            }
+            
+            // Buat uap air - Perbaikan signifikan
+            function createVapor() {
+                // Buat beberapa partikel uap sekaligus
+                for (let i = 0; i < 5; i++) {
+                    setTimeout(() => {
+                        const vapor = document.createElement('div');
+                        vapor.className = 'vapor';
+                        
+                        // Posisi acak di sepanjang sungai
+                        const randomPosition = 20 + Math.random() * 60;
+                        vapor.style.left = `${randomPosition}%`;
+                        
+                        // Tambahkan variasi ukuran
+                        const size = 30 + Math.random() * 30;
+                        vapor.style.width = `${size}px`;
+                        vapor.style.height = `${size}px`;
+                        
+                        // Tambahkan sedikit variasi horizontal
+                        const horizontalVariation = (Math.random() - 0.5) * 50;
+                        vapor.style.transform = `translateX(${horizontalVariation}px)`;
+                        
+                        vaporContainer.appendChild(vapor);
+                        
+                        // Tambahkan kelas untuk animasi
+                        setTimeout(() => {
+                            vapor.classList.add('evaporating');
+                        }, 10);
+                        
+                        // Hapus elemen setelah animasi selesai
+                        setTimeout(() => {
+                            vapor.remove();
+                        }, 5000);
+                    }, i * 300);
+                }
+            }
+            
+            // Buat efek petir
+            function createLightning() {
+                lightning.classList.add('flash');
+                
+                // Mainkan suara petir
+                thunderSound.currentTime = 0;
+                thunderSound.play().catch(e => console.log("Audio play error:", e));
+                
+                setTimeout(() => {
+                    lightning.classList.remove('flash');
+                }, 200);
+            }
+            
+            // Mulai simulasi
+            function startSimulation() {
+                if (isSimulating) return;
+                
+                isSimulating = true;
+                startBtn.disabled = true;
+                
+                // Tahap 1: Penguapan
+                status.textContent = 'Status: Penguapan air dari sungai';
+                
+                // Tampilkan efek panas dan sinar matahari
+                heatEffect.style.opacity = '1';
+                sunBeams.classList.add('active');
+                
+                // Mainkan suara penguapan
+                evaporationSound.currentTime = 0;
+                evaporationSound.loop = true;
+                evaporationSound.play().catch(e => console.log("Audio play error:", e));
+                
+                // Buat uap dengan interval lebih sering
+                vaporInterval = setInterval(createVapor, 800);
+                
+                // Tahap 2: Kondensasi (setelah 5 detik)
+                setTimeout(() => {
+                    clearInterval(vaporInterval);
+                    status.textContent = 'Status: Kondensasi membentuk awan';
+                    
+                    // Sembunyikan efek panas dan sinar matahari
+                    heatEffect.style.opacity = '0';
+                    sunBeams.classList.remove('active');
+                    
+                    // Hentikan suara penguapan
+                    evaporationSound.pause();
+                    
+                    // Awan menjadi lebih tebal
+                    cloud.classList.add('heavy');
+                    
+                    // Tahap 3: Hujan (setelah 3 detik)
+                    setTimeout(() => {
+                        status.textContent = 'Status: Hujan (presipitasi)';
+                        
+                        // Ubah background langit menjadi gelap
+                        body.classList.add('raining');
+                        
+                        // Sembunyikan matahari
+                        sun.classList.add('hidden');
+                        
+                        // Aktifkan hujan
+                        rain.classList.add('active');
+                        
+                        // Mainkan suara hujan
+                        rainSound.currentTime = 0;
+                        rainSound.loop = true;
+                        rainSound.play().catch(e => console.log("Audio play error:", e));
+                        
+                        // Buat efek petir secara berkala
+                        lightningInterval = setInterval(createLightning, 3000);
+                        
+                        // Tahap 4: Selesai (setelah 10 detik)
+                        setTimeout(() => {
+                            status.textContent = 'Status: Siklus selesai';
+                            startBtn.disabled = false;
+                            isSimulating = false;
+                            
+                            // Hentikan interval petir
+                            clearInterval(lightningInterval);
+                        }, 10000);
+                    }, 3000);
+                }, 5000);
+            }
+            
+            // Reset simulasi
+            function resetSimulation() {
+                clearInterval(vaporInterval);
+                clearInterval(lightningInterval);
+                
+                // Hentikan semua audio
+                evaporationSound.pause();
+                rainSound.pause();
+                thunderSound.pause();
+                
+                // Hapus semua uap
+                const vapors = document.querySelectorAll('.vapor');
+                vapors.forEach(vapor => vapor.remove());
+                
+                // Reset awan
+                cloud.classList.remove('heavy');
+                
+                // Reset hujan
+                rain.classList.remove('active');
+                
+                // Reset efek panas
+                heatEffect.style.opacity = '0';
+                
+                // Reset sinar matahari
+                sunBeams.classList.remove('active');
+                
+                // Reset matahari
+                sun.classList.remove('hidden');
+                
+                // Reset background langit
+                body.classList.remove('raining');
+                
+                // Reset status
+                status.textContent = 'Status: Siap';
+                
+                // Enable tombol start
+                startBtn.disabled = false;
+                isSimulating = false;
+            }
+            
+            // Event listeners
+            startBtn.addEventListener('click', startSimulation);
+            resetBtn.addEventListener('click', resetSimulation);
+            
+            // Inisialisasi
+            createSunBeams();
+            createRaindrops();
+        });
+    </script>
+</body>
+</html>
